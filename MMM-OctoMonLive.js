@@ -7,7 +7,7 @@
  * MIT Licensed.
  */
  
-Module.register("MMM-OctoMon",{
+Module.register("MMM-OctoMonLive",{
 	// Default module config.
 	defaults: {
 		elecApiUrl: "",
