@@ -11,7 +11,6 @@ Module.register("MMM-OctoMon",{
 	// Default module config.
 	defaults: {
 		elecApiUrl: "",
-		gasApiUrl: "",
 		api_key: "",
 		updateInterval: 60000*60,
 		displayDays: 7,
@@ -19,10 +18,6 @@ Module.register("MMM-OctoMon",{
 		elecHigh: 20,
 		elecCostKWH: 0.1372,
 		elecCostSC: 0.25,
-		gasMedium: 0.5,
-		gasHigh: 1,
-		gasCostKWH: 0.0331,
-		gasCostSC: 0.168,
 		decimalPlaces: 2,
 		showUpdateTime: true,
 		retryDelay: 5000,
@@ -34,17 +29,13 @@ Module.register("MMM-OctoMon",{
 
 		var self = this;
 		var elecDataRequest=null;
-		var gasDataRequest=null;
 
 		this.elecLoaded=false;
-		this.gasLoaded=false;
 
 		this.getElecData(2);
-		this.getGasData(2);
 		
 		setInterval(function() {
 			self.getElecData(2);
-			self.getGasData(2);
 		}, this.config.updateInterval);
 
 	},
@@ -89,45 +80,6 @@ Module.register("MMM-OctoMon",{
 
 	},
 
-	getGasData: function(retries) {
-		Log.log("getGasData(retries=" + retries + ")");
-
-		var self = this;
-
-		var hash = btoa(this.config.api_key + ":");
-
-		if(this.config.gasApiUrl!="")
-		{
-			var gasDataRequest = new XMLHttpRequest();
-			gasDataRequest.open("GET", this.config.gasApiUrl, true);
-			gasDataRequest.setRequestHeader("Authorization","Basic " + hash);
-			gasDataRequest.onreadystatechange = function() {
-				Log.log("getGasData() readyState=" + this.readyState);
-				if (this.readyState === 4) {
-					Log.log("getGasData() status=" + this.status);
-					if (this.status === 200) {
-						self.processGasData(JSON.parse(this.response));
-						retries=0;												
-					} else if (this.status === 401) {
-						self.gasLoaded = false;
-						self.updateDom(self.config.animationSpeed);
-						Log.error(self.name, "getGasData() 401 error. " + this.status);
-					} else {
-						self.gasLoaded = false;
-						self.updateDom(self.config.animationSpeed);
-						Log.error(self.name, "getGasData() Could not load data. status=" + this.status);
-					}
-					
-					if (retries>0) {
-						retries=retries-1;
-						self.scheduleGasRetry(retries);
-					}
-				}
-			};
-			gasDataRequest.send();
-		}
-	},
-
 	scheduleElecRetry: function(retries) {
 		Log.log("scheduleElecRetry() retries=" + retries);
 		var self = this;
@@ -136,13 +88,6 @@ Module.register("MMM-OctoMon",{
 		}, self.config.retryDelay);
 	},
 
-	scheduleGasRetry: function(retries) {
-		Log.log("scheduleGasRetry() retries=" + retries);
-		var self = this;
-		setTimeout(function() {
-			self.getGasData(retries);
-		}, self.config.retryDelay);
-	},
 
 	// Override dom generator.
 	getDom: function() {
@@ -150,9 +95,6 @@ Module.register("MMM-OctoMon",{
 		var wrapper = document.createElement("div");
 
 		var errors = "";
-		if ((this.config.gasApiUrl === "" || typeof this.config.gasApiUrl === 'undefined') && (this.config.elecApiUrl === "" || typeof this.config.elecApiUrl === 'undefined')) {
-			errors = errors + "Both gasApiUrl and elecApiUrl not set in config. At least one required.</br>";
-		}
 
 		if (this.config.api_key === "") {
 			errors = errors + "API Key (api_key) not set in config.</br>";
@@ -164,7 +106,7 @@ Module.register("MMM-OctoMon",{
 			return wrapper;
 		}
 
-		if(this.elecLoaded == false && this.gasLoaded==false) {
+		if(this.elecLoaded == false) {
 			wrapper.innerHTML = "Querying Server...";
 			wrapper.className = "dimmed light small";
 			return wrapper;
@@ -186,17 +128,10 @@ Module.register("MMM-OctoMon",{
 		headereleclabel.className = "small";
 		headereleclabel.style.verticalAlign = "top";
 		headereleclabel.style.textAlign = "center";
-
-		var headergaslabel = document.createElement("td");
-		headergaslabel.innerHTML = "<span class=\"fa fa-burn small\"></span> Gas";
-		headergaslabel.className = "small";
-		headergaslabel.style.verticalAlign = "top";
-		headergaslabel.style.textAlign = "center";
 		
 
 		headerrow.appendChild(headerdatelabel);
 		if(this.elecDataRequest) headerrow.appendChild(headereleclabel);
-		if(this.gasDataRequest) headerrow.appendChild(headergaslabel);
 		table.appendChild(headerrow);
 		
 		var i=0;
@@ -215,30 +150,12 @@ Module.register("MMM-OctoMon",{
 					elecdate = new Date(this.elecDataRequest.results[0].interval_start);
 				}
 			}
-			var gasdate;
-			if (this.gasDataRequest) {
-				if(typeof this.gasDataRequest.results[0] !== 'undefined') {
-					gasdate = new Date(this.gasDataRequest.results[0].interval_start);
-				}
-			}
 			
 			if(typeof elecdate == 'undefined') {
 				elecdate = new Date();
 			}
-			if(typeof gasdate == 'undefined') {
-				gasdate = new Date();
-			}
 			
-			//which is the closest date to today? start the loop there.
-			if(elecdate>=gasdate)
-			{
-				dteLoop=elecdate;
-			}
-			else
-			{
-				dteLoop=gasdate;
-			}				
-			
+			dteLoop=elecdate;
 		}
 
 		var strDays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -256,12 +173,7 @@ Module.register("MMM-OctoMon",{
 			thiseleclabel.className = "small";
 			thiseleclabel.style.textAlign = "center";
 
-			var thisgaslabel = document.createElement("td");
-			thisgaslabel.innerHTML = "---";
-			thisgaslabel.className = "small";
-			thisgaslabel.style.textAlign = "center";
-
-			//we're looking for gas and elec results for this day
+			//we're looking for elec results for this day
 			if (this.elecDataRequest) {
 				for(i=0;i<intDays;i++) {
 					if(typeof this.elecDataRequest.results[i] !== 'undefined') {
@@ -281,40 +193,13 @@ Module.register("MMM-OctoMon",{
 							//display electricity energy usage and cost here
 							thiseleclabel.innerHTML = "&nbsp;&nbsp;<span style=\"" + strCol + "\">" + strUse + " " + strCost + "</span>";
 							thiseleclabel.style.textAlign = "right";
-
 						}
 					}
 				}
 			}
-			
-			if (this.gasDataRequest) {
-				for(i=0;i<intDays;i++) {
-					if(typeof this.gasDataRequest.results[i] !== 'undefined') {
-						var edate = new Date(this.gasDataRequest.results[i].interval_start);
-						if(edate.toLocaleDateString() == dteLoop.toLocaleDateString()) {
-							
-							var strCol = "white";//could be green
-							var intVal = this.gasDataRequest.results[i].consumption.toFixed(this.config.decimalPlaces);
-							if(intVal>=this.config.gasMedium)strCol="color:orange";
-							if(intVal>=this.config.gasHigh)strCol="color:red";
-
-							strUse = intVal + " kWh";
-							strCost = "";
-							if(this.config.gasCostKWH>0)
-								strCost = "£" + (Math.round(((intVal * this.config.gasCostKWH)+this.config.gasCostSC) * 100)/100).toFixed(2);
-
-							//display gas energy usage and cost here
-							thisgaslabel.innerHTML = "&nbsp;&nbsp;<span style=\"" + strCol + "\">" + strUse + " " + strCost + "</span>";
-							thisgaslabel.style.textAlign = "right";
-
-						}
-					}
-				}
-			}
-								
+											
 			thisrow.appendChild(thisdatelabel);
 			if(this.elecDataRequest) thisrow.appendChild(thiseleclabel);
-			if(this.gasDataRequest) thisrow.appendChild(thisgaslabel);				
 			
 			table.appendChild(thisrow);
 			
@@ -328,7 +213,6 @@ Module.register("MMM-OctoMon",{
 
 	getHeader: function() {
 		var adate = new Date();
-		//Log.log("getHeader() " + adate.toLocaleTimeString());
 
 		if(this.config.showUpdateTime == true) {
 			return this.data.header + " " + adate.toLocaleTimeString();
@@ -344,13 +228,4 @@ Module.register("MMM-OctoMon",{
 		this.elecLoaded = true;
 		self.updateDom(self.config.animationSpeed);
 	},
-
-	processGasData: function(data) {
-		Log.log("processGasData()");
-		var self = this;
-		this.gasDataRequest = data;
-		this.gasLoaded = true;
-		self.updateDom(self.config.animationSpeed);
-	},
-
 });
