@@ -1,7 +1,7 @@
 //MMM-OctoMon.js:
 
 /* Magic Mirror
- * Module: MMM-OctoMon
+ * Module: MMM-OctoMonLive
  *
  * By Chris Thomas
  * MIT Licensed.

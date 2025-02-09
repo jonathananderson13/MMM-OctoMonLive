@@ -1,6 +1,10 @@
-# MMM-OctoMon
+# MMM-OctoMonLive
 
-"Octopus Monitor", displays energy usage history for your Octopus Energy account. Unofficial!
+Based on the version developed by Chris Thomas. "Octopus Monitor Live", displays energy usage history, day so far and live usage for your Octopus Energy account. Unofficial!
+
+Currently this is only for Electricity not gas.
+
+Requires Octopus Mini for live data.
 
 ## Example
 
@@ -13,18 +17,18 @@
 
 ## Installation
 
-1. Clone this repo into `~/MagicMirror/modules` directory, to create `~/MagicMirror/modules/MMM-OctoMon`.
+1. Clone this repo into `~/MagicMirror/modules` directory, to create `~/MagicMirror/modules/MMM-OctoMonLive`.
 
 ```
 	cd ~/MagicMirror/modules
-	git clone https://github.com/christopherpthomas/MMM-OctoMon.git
+	git clone https://github.com/jonathananderson13/MMM-OctoMonLive.git
 ```
 
 1. Add OctoMon configuration into `~/MagicMirror/config/config.js`:
 
 ```
 	{
-		module: 'MMM-OctoMon',
+		module: 'MMM-OctoMonLive',
 		position: 'bottom_right',
 		header: '<img src="modules/MMM-OctoMon/public/octobw.jpg" style="width:20px;vertical-align:bottom;"/> Octopus Energy',
 		config: {
